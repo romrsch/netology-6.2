@@ -1,12 +1,14 @@
-# Домашнее задание к занятию "6.2. SQL"
+## Домашнее задание к занятию "6.2. SQL"
 
 ### Задача 1
 
 Используя docker поднимите инстанс PostgreSQL (версию 12) c 2 volume, в который будут складываться данные БД и бэкапы.
 Приведите получившуюся команду или docker-compose манифест.
+
 ---
 ***Ответ:*** 
-Команды
+
+Команды:
 ``` 
 docker pull postgres:12
 
@@ -18,13 +20,21 @@ docker volume create vol1
 vol1
 docker volume create vol2
 vol2
-
-docker run --rm --name pg-docker -e POSTGRES_PASSWORD=12345678 -ti -p 5432:5432 -v vol1:/var/lib/postgresql/data -v vol2:/var/lib/postgresql postgres:12
-
+```
+```
+docker run --rm --name pg-docker -e POSTGRES_PASSWORD=12345678 -ti -p 5432:5432 -v vol1:/var/lib/postgresql/data -v  vol2:/var/lib/postgresql postgres:12
+```
+```
+docker run --rm --name pg-docker2 -e POSTGRES_PASSWORD=12345678 -ti -p 5433:5433 -v vol1:/var/lib/postgresql/data -v vol2:/var/lib/postgresql postgres:12
+```
+```
 docker ps
 CONTAINER ID   IMAGE         COMMAND                  CREATED         STATUS         PORTS                                       NAMES
 4adb8cca9d5f   postgres:12   "docker-entrypoint.s…"   2 minutes ago   Up 2 minutes   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   pg-docker
 
+
+```
+```
 docker exec -i -t 4adb8cca9d5f bash
 
 root@4adb8cca9d5f:/#
@@ -66,7 +76,8 @@ id (serial primary key)
 * Описание таблиц (describe)
 * SQL-запрос для выдачи списка пользователей с правами над таблицами test_db
 * Список пользователей с правами над таблицами test_db
---
+
+---
 ***Ответ:***
 ```
 postgres@3af289ce1404:~$ psql
@@ -83,13 +94,10 @@ postgres=#
 postgres=# ALTER DATABASE "test_db" OWNER to "test-admin-user";
 ALTER DATABASE
 postgres=#
-
+```
+```
 postgres=# CREATE ROLE "test-simple-user" NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT LOGIN;
 CREATE ROLE
-
-postgres=# \c test_db
-You are now connected to database "test_db" as user "postgres".
-test_db=#
 ```
 ```
 test_db=# CREATE TABLE orders
@@ -112,8 +120,16 @@ CREATE TABLE
 ```
 Базы данных:
 ![альт](https://i.ibb.co/QK5qWGc/Screenshot-1.jpg)
-Пользователи и таблицы:
+
+Пользователи и созданные таблицы:
 ![альт](https://i.ibb.co/jyyjs5p/Screenshot-2.jpg)
+
+Предоставим пользователю `test-simple-user` права на SELECT/INSERT/UPDATE/DELETE данных таблиц БД `test_db`:
+
+![альт](https://i.ibb.co/mHKM1cW/Screenshot-10.jpg)
+
+![альт](https://i.ibb.co/2PRjKj5/Screenshot-11.jpg)
+
 
 ---
 ### Задача 3
@@ -144,6 +160,7 @@ Ritchie Blackmore	|Russia
 * Приведите в ответе:
 * Запросы
 * Результаты их выполнения.
+
 ---
 ***Ответ:***
 ```
@@ -155,7 +172,9 @@ test_db=# insert into clients VALUES (1, 'Иванов Иван Иванович
 INSERT 0 5
 ```
 Скриншот (количество записей для каждой таблицы)
+
 ![альт](https://i.ibb.co/bz8XQnS/Screenshot-3.jpg)
+
 ---
 ### Задача 4
 
@@ -171,6 +190,7 @@ INSERT 0 5
 Приведите SQL-запросы для выполнения данных операций.
 Приведите SQL-запрос для выдачи всех пользователей, которые совершили заказ, а также вывод данного запроса.
 Подсказка - используйте директиву UPDATE.
+
 ---
 ***Ответ***:
 ```
@@ -182,14 +202,14 @@ test_db=# update  clients set booking = 5 where id = 3;
 UPDATE 1
 test_db=#
 ```
-Посмотрим у каких клиентов не нулевые значения по заказам:
+Просмотр у каких клиентов не нулевые значения по "заказам":
 
 ![альт](https://i.ibb.co/N2ZMWZ9/Screenshot-6.jpg)
 
 
 ---
 ### Задача 5
-Получите полную информацию по выполнению запроса выдачи всех пользователей из задачи 4 (используя директиву EXPLAIN).
+Получите полную информацию по выполнению запроса выдачи всех пользователей из задачи 4 (используя директиву `EXPLAIN`).
 Приведите получившийся результат и объясните что значат полученные значения.
 
 ---
@@ -201,15 +221,49 @@ test_db=# explain select * from clients as c where exists (select id from orders
 
 ***Из дополнительных материалов к модулю***:
 "Наибольший интерес в выводимой информации представляет ожидаемая стоимость выполнения оператора, которая показывает, сколько, по мнению планировщика, будет выполняться этот оператор.  Выводятся два числа: стоимость запуска до выдачи первой строки и общая стоимость выдачи всех строк". 
+
 ---
+
 ### Задача 6
 Создайте бэкап БД `test_db` и поместите его в `volume`, предназначенный для бэкапов (см. Задачу 1).
 Остановите контейнер с PostgreSQL (но не удаляйте volumes).
-
 Поднимите новый пустой контейнер с PostgreSQL.
 Восстановите БД `test_db` в новом контейнере.
-
 Приведите список операций, который вы применяли для бэкапа данных и восстановления.
-----
-***Ответ***:
 
+---
+***Ответ***:
+```
+user@ubuntu:~/netology/6.2$ docker exec -t pg-docker pg_dump -U postgres test_db -f /var/lib/postgresql/data/dump_test_DB.sql
+```
+```
+user@ubuntu:~/netology/6.2$ docker exec -i pg-docker2 psql -U postgres -d test_db -f /var/lib/postgresql/data/dump_test_DB.sql
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+SET
+SET
+SET
+SET
+SET
+SET
+CREATE TABLE
+ALTER TABLE
+CREATE TABLE
+ALTER TABLE
+COPY 5
+COPY 5
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+GRANT
+GRANT
+user@ubuntu:~/netology/6.2$
+```
